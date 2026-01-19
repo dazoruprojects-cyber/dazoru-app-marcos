@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAZORU - Marcos v2.3</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#222222">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <style>
+        :root { --primary: #222; --accent: #d35400; --bg: #f4f4f4; --text: #333; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        header { text-align: center; margin-bottom: 25px; border-bottom: 3px solid var(--primary); padding-bottom: 15px; }
+        h1 { margin: 0; color: var(--primary); font-size: 1.8rem; text-transform: uppercase; letter-spacing: 1px; }
+        p.subtitle { color: #666; margin: 5px 0 0 0; font-size: 0.9rem; }
+        .grid-layout { display: grid; grid-template-columns: 320px 1fr; gap: 30px; }
+        @media (max-width: 900px) { .grid-layout { grid-template-columns: 1fr; } }
+        .controls { background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #ddd; display: flex; flex-direction: column; gap: 12px; }
+        .mode-selector { border: 2px solid var(--accent); background: #fffdfa; padding: 5px; border-radius: 6px; }
+        .mode-selector label { color: var(--accent); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; }
+        .mode-selector select { border: none; background: transparent; font-weight: bold; color: #333; width: 100%; font-size: 1rem; cursor: pointer; }
+        .mode-selector select:focus { outline: none; }
+        .section-title { font-size: 0.8rem; font-weight: 800; color: #7f8c8d; text-transform: uppercase; margin-top: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .input-group { display: flex; flex-direction: column; gap: 4px; }
+        label { font-weight: 600; font-size: 0.85rem; color: #555; }
+        input { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; width: 100%; box-sizing: border-box; transition: 0.2s; }
+        input:focus { border-color: var(--primary); outline: none; border-left: 4px solid var(--primary); }
+        input[readonly] { background-color: #eee; color: #777; border-color: #ddd; }
+        .panel-opcion { display: none; flex-direction: column; gap: 12px; animation: fadeIn 0.3s; }
+        .panel-opcion.activo { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .manual-check { display: flex; align-items: center; gap: 10px; background: #fdfdfd; padding: 10px; border: 1px solid #eee; border-radius: 6px; margin-top: 5px; }
+        .manual-check input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+        .manual-check label { margin: 0; cursor: pointer; color: #d35400; font-size: 0.9rem; }
+        .manual-inputs-container { display: none; grid-template-columns: 1fr 1fr; gap: 10px; padding-left: 10px; border-left: 3px solid #d35400; }
+        .manual-inputs-container.visible { display: grid; }
+        button { background: var(--primary); color: white; padding: 14px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 15px; font-size: 1rem; }
+        button:hover { background: #000; }
+        button.secondary { background: #7f8c8d; }
+        .canvas-box { background: #e0e0e0; border-radius: 8px; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 400px; overflow: hidden; border: 2px solid #ccc; }
+        canvas { background: #fff; box-shadow: 0 10px 20px rgba(0,0,0,0.15); max-width: 100%; }
+        .results { margin-top: 20px; border: 1px solid #eee; border-radius: 8px; overflow: hidden; }
+        .result-row { display: flex; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #eee; }
+        .result-row:last-child { border-bottom: none; background: #f9f9f9; font-weight: bold; }
+        .result-label { color: #666; }
+        .result-value { color: var(--primary); font-weight: bold; font-size: 1.1rem; }
+        @media print {
+            .controls, button { display: none; }
+            .container { box-shadow: none; border: none; width: 100%; }
+            .grid-layout { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>DAZORU - MARCOS</h1>
+        <p class="subtitle">Calculadora Modular Industrial</p>
+    </header>
+
+    <div class="grid-layout">
+        <aside class="controls">
+            <div class="mode-selector input-group">
+                <label>¿Cómo quieres calcular?</label>
+                <select id="modoCalculo" onchange="cambiarModo()">
+                    <option value="distribucion">1. CALCULAR MEDIDA DE MARCOS</option>
+                    <option value="medida">2. TENGO LA MEDIDA (Centrar)</option>
+                </select>
+            </div>
+
+            <div class="section-title">1. Dimensiones del Muro</div>
+            <div class="input-group"><label>Ancho Muro (cm)</label><input type="number" id="anchoMuro" value="180" oninput="calcular()"></div>
+            <div class="input-group"><label>Alto Muro (cm)</label><input type="number" id="altoMuro" value="120" oninput="calcular()"></div>
+
+            <div class="section-title">2. Configuración</div>
+            <div class="input-group"><label>Separación entre Marcos (cm)</label><input type="number" id="separacion" value="1.25" step="0.05" oninput="calcular()"></div>
+
+            <div id="panelDistribucion" class="panel-opcion activo">
+                <div class="section-title" style="color:#2980b9">Modo: Definir Cantidad</div>
+                <div class="input-group"><label>Columnas (Verticales)</label><input type="number" id="cols" value="4" oninput="calcular()"></div>
+                <div class="input-group"><label>Filas (Horizontales)</label><input type="number" id="filas" value="3" oninput="calcular()"></div>
+                
+                <div class="section-title" style="margin-top:5px; border:none; color:#555">Márgenes Individuales</div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div class="input-group"><label>Izq (I)</label><input type="number" id="margenI" value="5" oninput="calcular()"></div>
+                    <div class="input-group"><label>Der (D)</label><input type="number" id="margenD" value="5" oninput="calcular()"></div>
+                    <div class="input-group"><label>Sup (S)</label><input type="number" id="margenS" value="10" oninput="calcular()"></div>
+                    <div class="input-group"><label>Inf (Inf)</label><input type="number" id="margenInf" value="10" oninput="calcular()"></div>
+                </div>
+            </div>
+
+            <div id="panelMedida" class="panel-opcion">
+                <div class="section-title" style="color:#e67e22">Modo: Medida Fija</div>
+                <div class="input-group"><label>Ancho del Marco (cm)</label><input type="number" id="anchoMarco_input" value="50" oninput="calcular()"></div>
+                <div class="input-group"><label>Alto del Marco (cm)</label><input type="number" id="altoMarco_input" value="50" oninput="calcular()"></div>
+                
+                <div class="manual-check">
+                    <input type="checkbox" id="checkManual" onchange="toggleManualInputs()">
+                    <label for="checkManual">Definir Cantidad Manualmente</label>
+                </div>
+                
+                <div id="inputsManuales" class="manual-inputs-container">
+                    <div class="input-group"><label>Columnas</label><input type="number" id="cols_manual" value="3" oninput="calcular()"></div>
+                    <div class="input-group"><label>Filas</label><input type="number" id="filas_manual" value="2" oninput="calcular()"></div>
+                </div>
+
+                <div class="input-group"><label style="color:#e67e22">Márgenes Calculados (Auto)</label><input type="text" id="margenAuto" readonly value="-"></div>
+            </div>
+
+            <button onclick="calcular()">🔄 RECALCULAR</button>
+            <button class="secondary" onclick="window.print()">🖨️ IMPRIMIR PLANO</button>
+        </aside>
+
+        <main>
+            <div class="canvas-box"><canvas id="lienzo"></canvas></div>
+            <div class="results">
+                <div class="result-row"><span class="result-label">Configuración Final:</span><span class="result-value" id="resConfig">0 Col x 0 Filas</span></div>
+                <div class="result-row"><span class="result-label">Medida de Marco:</span><span class="result-value" id="resMedida" style="color:var(--accent)">0 x 0 cm</span></div>
+                <div class="result-row"><span class="result-label">Márgenes (Aire):</span><span class="result-value" id="resMargenes">Ver plano</span></div>
+                <div class="result-row"><span class="result-label">Cantidad Total:</span><span class="result-value" id="resCantidad">0 marcos</span></div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+
+    function cambiarModo() {
+        const modo = document.getElementById('modoCalculo').value;
+        const panelDist = document.getElementById('panelDistribucion');
+        const panelMed = document.getElementById('panelMedida');
+        if (modo === 'distribucion') { panelDist.classList.add('activo'); panelMed.classList.remove('activo'); } 
+        else { panelDist.classList.remove('activo'); panelMed.classList.add('activo'); }
+        calcular();
+    }
+    function toggleManualInputs() {
+        const isManual = document.getElementById('checkManual').checked;
+        const container = document.getElementById('inputsManuales');
+        if (isManual) container.classList.add('visible'); else container.classList.remove('visible');
+        calcular();
+    }
+    function calcular() {
+        const modo = document.getElementById('modoCalculo').value;
+        const W_muro = parseFloat(document.getElementById('anchoMuro').value) || 0;
+        const H_muro = parseFloat(document.getElementById('altoMuro').value) || 0;
+        const gap = parseFloat(document.getElementById('separacion').value) || 0;
+        let cols, filas, anchoMarco, altoMarco;
+        
+        let mI, mD, mS, mInf;
+
+        if (modo === 'distribucion') {
+            cols = parseInt(document.getElementById('cols').value) || 1;
+            filas = parseInt(document.getElementById('filas').value) || 1;
+            mI = parseFloat(document.getElementById('margenI').value) || 0;
+            mD = parseFloat(document.getElementById('margenD').value) || 0;
+            mS = parseFloat(document.getElementById('margenS').value) || 0;
+            mInf = parseFloat(document.getElementById('margenInf').value) || 0;
+
+            const anchoDisponible = W_muro - (mI + mD); 
+            const altoDisponible = H_muro - (mS + mInf);
+            const totalGapX = (cols - 1) * gap; 
+            const totalGapY = (filas - 1) * gap;
+            
+            anchoMarco = (anchoDisponible - totalGapX) / cols; 
+            altoMarco = (altoDisponible - totalGapY) / filas;
+
+            document.getElementById('resMargenes').innerText = `I:${mI} D:${mD} | S:${mS} Inf:${mInf}`;
+
+        } else {
+            anchoMarco = parseFloat(document.getElementById('anchoMarco_input').value) || 10;
+            altoMarco = parseFloat(document.getElementById('altoMarco_input').value) || 10;
+            const isManualQty = document.getElementById('checkManual').checked;
+            if (isManualQty) {
+                cols = parseInt(document.getElementById('cols_manual').value) || 1;
+                filas = parseInt(document.getElementById('filas_manual').value) || 1;
+            } else {
+                cols = Math.floor((W_muro + gap) / (anchoMarco + gap)); if (cols < 1) cols = 1;
+                filas = Math.floor((H_muro + gap) / (altoMarco + gap)); if (filas < 1) filas = 1;
+            }
+            const ocupadoW = (cols * anchoMarco) + ((cols - 1) * gap); 
+            const ocupadoH = (filas * altoMarco) + ((filas - 1) * gap);
+            let centradoX = (W_muro - ocupadoW) / 2; let centradoY = (H_muro - ocupadoH) / 2;
+            mI = centradoX; mD = centradoX; mS = centradoY; mInf = centradoY;
+
+            const inputAuto = document.getElementById('margenAuto');
+            inputAuto.value = `Lat: ${centradoX.toFixed(1)} | Alt: ${centradoY.toFixed(1)}`;
+            document.getElementById('resMargenes').innerText = `Auto (Centrado)`;
+            if (centradoX < 0 || centradoY < 0) { inputAuto.style.color = "red"; inputAuto.style.fontWeight = "bold"; inputAuto.value += " (NO CABE)"; } 
+            else { inputAuto.style.color = "#777"; inputAuto.style.fontWeight = "normal"; }
+        }
+
+        if (anchoMarco < 0) anchoMarco = 0; if (altoMarco < 0) altoMarco = 0;
+        document.getElementById('resConfig').innerText = `${cols} Columnas x ${filas} Filas`;
+        document.getElementById('resMedida').innerText = `${anchoMarco.toFixed(2)} x ${altoMarco.toFixed(2)} cm`;
+        document.getElementById('resCantidad').innerText = (cols * filas) + " marcos";
+        dibujar(W_muro, H_muro, cols, filas, anchoMarco, altoMarco, gap, mI, mD, mS, mInf);
+    }
+
+    function dibujar(Wm, Hm, c, f, w, h, g, mI, mD, mS, mInf) {
+        const canvas = document.getElementById('lienzo'); const ctx = canvas.getContext('2d');
+        const scale = Math.min(800 / Wm, 500 / Hm); canvas.width = Wm * scale; canvas.height = Hm * scale;
+        
+        ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "#ccc"; ctx.lineWidth = 1; ctx.strokeRect(0, 0, canvas.width, canvas.height);
+        
+        if (mI < 0 || mD < 0 || mS < 0 || mInf < 0) { ctx.fillStyle = "rgba(255, 0, 0, 0.05)"; ctx.fillRect(0,0,canvas.width, canvas.height); }
+        
+        for (let row = 0; row < f; row++) {
+            for (let col = 0; col < c; col++) {
+                let x = mI + (col * (w + g)); let y = mS + (row * (h + g));
+                ctx.fillStyle = "#ecf0f1"; ctx.fillRect(x * scale, y * scale, w * scale, h * scale);
+                ctx.strokeStyle = "#111"; ctx.lineWidth = 3; ctx.strokeRect(x * scale, y * scale, w * scale, h * scale);
+                if (row === 0 && col === 0 && w*scale > 35) {
+                    ctx.fillStyle = "#333"; ctx.font = "bold 10px Arial"; ctx.textAlign = "center";
+                    ctx.fillText(`${w.toFixed(1)}`, (x + w/2)*scale, (y + h/2)*scale - 5); ctx.fillText(`x ${h.toFixed(1)}`, (x + w/2)*scale, (y + h/2)*scale + 8);
+                }
+            }
+        }
+        
+        ctx.fillStyle = "rgba(231, 76, 60, 0.15)";
+        if (mI > 0) ctx.fillRect(0, 0, mI * scale, canvas.height); 
+        if (mD > 0) ctx.fillRect((Wm - mD) * scale, 0, mD * scale, canvas.height); 
+        if (mS > 0) ctx.fillRect(0, 0, canvas.width, mS * scale); 
+        if (mInf > 0) ctx.fillRect(0, (Hm - mInf) * scale, canvas.width, mInf * scale); 
+        
+        ctx.fillStyle = "#c0392b"; ctx.font = "bold 10px Arial";
+        if (mI > 5) ctx.fillText(`I:${mI}`, (mI/2)*scale, canvas.height/2);
+        if (mD > 5) ctx.fillText(`D:${mD}`, (Wm - mD/2)*scale, canvas.height/2);
+        if (mS > 5) ctx.fillText(`S:${mS}`, canvas.width/2, (mS/2)*scale);
+        if (mInf > 5) ctx.fillText(`Inf:${mInf}`, canvas.width/2, (Hm - mInf/2)*scale);
+    }
+    window.onload = function() { cambiarModo(); };
+</script>
+</body>
+</html>
